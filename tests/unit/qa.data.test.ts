@@ -30,15 +30,28 @@ describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
     expect([...ids].sort()).toEqual([...STAGES].sort())
   })
 
-  it('每本恰 100 词（共 600），name/description 非空', () => {
+  it('6 本词书、id 唯一且覆盖全部 6 个学段，规模与发布版一致（v1.2 全量词库）', () => {
+    expect(books).toHaveLength(6)
+    const ids = books.map((b) => b.book.id)
+    expect(new Set(ids).size).toBe(6)
+    expect([...ids].sort()).toEqual([...STAGES].sort())
+    // 由 scripts/build-wordbooks.ts 从 kajweb/dict 数据生成；重新生成后如数量变化需同步更新
+    const expected: Record<string, number> = {
+      primary: 676,
+      junior: 2416,
+      senior: 4750,
+      cet4: 4500,
+      cet6: 3907,
+      kaoyan: 4988,
+    }
     let total = 0
     for (const { book } of books) {
-      expect(book.words.length, book.id).toBeGreaterThanOrEqual(100)
+      expect(book.words.length, book.id).toBe(expected[book.id])
       expect(book.name.trim().length, book.id).toBeGreaterThan(0)
       expect(book.description.trim().length, book.id).toBeGreaterThan(0)
       total += book.words.length
     }
-    expect(total).toBe(600)
+    expect(total).toBe(21237)
   })
 
   it('每个词条字段完整：headword 书内唯一、音标/释义/双语例句非空', () => {

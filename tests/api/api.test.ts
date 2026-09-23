@@ -3,8 +3,21 @@
  * 学习与 SM-2 调度（US8）、打卡（US9）、统计（US10）、健康检查（US12）。
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync, readdirSync } from 'node:fs'
+import * as path from 'node:path'
 import { makeApp, mockLogin, getJSON, postJSON, patchJSON, cookieHeader, responseCookies } from './helpers'
 import { addDays } from '../../server/core/dates'
+
+/** 种子词书各 id 的词数（以仓库发布的词书 JSON 为准，词库更新时无需改测试）。 */
+function expectedWordCounts(): Record<string, number> {
+  const dir = path.resolve(__dirname, '../../assets/wordbooks')
+  const out: Record<string, number> = {}
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+    const book = JSON.parse(readFileSync(path.join(dir, f), 'utf8')) as { id: string; words: unknown[] }
+    out[book.id] = book.words.length
+  }
+  return out
+}
 
 describe('健康检查（US12）', () => {
   it('GET /api/health 返回 200 与 ok:true', async () => {
@@ -115,12 +128,16 @@ describe('认证（US1 / US2）', () => {
 })
 
 describe('词书与每日计划（US3 / US4）', () => {
-  it('列出 6 本内置词书，每本 100 词', async () => {
+  it('列出 6 本内置词书，词数与发布的词书 JSON 一致', async () => {
     const { app } = await makeApp()
     const jar = await mockLogin(app)
     const { body } = await getJSON<{ books: Array<{ id: string; wordCount: number; isActive: boolean }> }>(app, jar, '/api/books')
+    const expected = expectedWordCounts()
     expect(body.books).toHaveLength(6)
-    expect(body.books.map((b) => b.wordCount)).toEqual([100, 100, 100, 100, 100, 100])
+    for (const b of body.books) {
+      expect(b.wordCount, b.id).toBe(expected[b.id])
+      expect(b.wordCount).toBeGreaterThanOrEqual(100)
+    }
     expect(body.books.every((b) => !b.isActive)).toBe(true)
   })
 
@@ -331,8 +348,8 @@ describe('打卡与统计（US9 / US10）', () => {
     expect(stats.body.totalLearned).toBe(20)
     expect(stats.body.today).toEqual({ newCount: 20, reviewCount: 0 })
     expect(stats.body.activeBook!.learned).toBe(20)
-    expect(stats.body.activeBook!.total).toBe(100)
-    expect(stats.body.activeBook!.pct).toBe(20)
+    expect(stats.body.activeBook!.total).toBe(expectedWordCounts().primary!)
+    expect(stats.body.activeBook!.pct).toBe(Math.round((20 / expectedWordCounts().primary!) * 100))
     expect(stats.body.last7.at(-1)!.total).toBe(20)
 
     // 日历：今天已打卡

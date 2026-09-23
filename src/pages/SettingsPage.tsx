@@ -85,7 +85,7 @@ export function SettingsPage() {
 
       <div className="settings-group-label">关于</div>
       <div className="card settings-card">
-        <div className="about-note">词径 WordPath v1.1.0 · 免费开源 · 开源协议见仓库 LICENSE</div>
+        <div className="about-note">词径 WordPath v1.2.0 · 免费开源 · 开源协议见仓库 LICENSE</div>
       </div>
 
       <Sheet open={sheetOpen} title="每日新词量" onClose={() => setSheetOpen(false)}>

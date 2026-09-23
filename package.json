@@ -1,6 +1,6 @@
 {
   "name": "wordpath",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "词径 WordPath —— 按学段选词书、用间隔重复科学抗遗忘的背单词 Web 应用",
   "private": true,
   "engines": {
@@ -19,7 +19,8 @@
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
     "wordbook:validate": "tsx scripts/wordbook.ts validate",
-    "wordbook:import": "tsx scripts/wordbook.ts import"
+    "wordbook:import": "tsx scripts/wordbook.ts import",
+    "wordbook:build": "tsx scripts/build-wordbooks.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^9.4.0",
