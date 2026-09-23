@@ -71,7 +71,7 @@ export function SettingsPage() {
           </div>
           <div className="account-info">
             <div className="account-name">
-              {me?.user.provider === 'wechat' ? me.user.nickname : `体验用户 ${me?.user.id ? me.user.id.slice(-4).padStart(4, '0') : ''}`}
+              {me?.user.nickname ?? ''}
             </div>
             <div className="account-provider">
               登录方式：{me?.user.provider === 'wechat' ? '微信登录' : '体验登录'}

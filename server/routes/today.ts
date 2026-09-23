@@ -18,7 +18,15 @@ export function registerTodayRoutes(app: FastifyInstance, db: DB): void {
       reply.code(400).send({ error: 'BAD_MODE' })
       return
     }
-    return getQueue(db, request.user!, query.mode as StudyMode, todayInShanghai())
+    try {
+      return getQueue(db, request.user!, query.mode as StudyMode, todayInShanghai())
+    } catch (err) {
+      if (err instanceof BizError) {
+        reply.code(err.code).send({ error: err.error })
+        return
+      }
+      throw err
+    }
   })
 
   app.post('/api/study/answer', { preHandler: auth }, async (request, reply) => {

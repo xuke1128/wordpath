@@ -49,6 +49,16 @@ describe('QA：每日新词量边界（US4）', () => {
   })
 })
 
+describe('QA：回归修复（发布文档 §3 修复项）', () => {
+  it('未激活词书时 queue 返回 400 NO_ACTIVE_BOOK（此前为 500）', async () => {
+    const { app } = await makeApp()
+    const jar = await mockLogin(app)
+    const r = await getJSON<{ error: string }>(app, jar, '/api/study/queue?mode=choice')
+    expect(r.status).toBe(400)
+    expect(r.body.error).toBe('NO_ACTIVE_BOOK')
+  })
+})
+
 describe('QA：选择题判分与队列稳定性（US6 / F8）', () => {
   it('答错：correct=false、quality=1，响应 correctIndex 指向正确选项文本（服务端裁决）', async () => {
     const { app, db } = await makeApp()
