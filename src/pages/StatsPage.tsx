@@ -76,6 +76,36 @@ export function StatsPage() {
 
       {stats && (
         <>
+          <div className="card">
+            <div className="card-title">学习排行榜</div>
+            <div className="lb-sub">按累计学习词汇量排名 · 微信与体验用户同榜</div>
+            {!board ? (
+              <Skeleton h={180} r={10} />
+            ) : board.entries.length === 0 || board.entries.every((e) => e.totalWords === 0 && e.totalDays === 0) ? (
+              <EmptyState ico="🏆" title="还没有上榜数据，去学第一个单词抢占榜首吧" />
+            ) : (
+              <ol className="lb-list">
+                {board.entries.map((e) => (
+                  <li key={e.userId} className={`lb-row${e.isMe ? ' lb-me' : ''}`}>
+                    <span className={`lb-rank${e.rank <= 3 ? ` lb-rank-${e.rank}` : ''}`}>
+                      {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
+                    </span>
+                    <span className="lb-name">
+                      {e.nickname}
+                      <i className={`lb-tag${e.provider === 'wechat' ? ' lb-tag-wechat' : ''}`}>
+                        {e.provider === 'wechat' ? '微信' : '体验'}
+                      </i>
+                      {e.isMe && <i className="lb-tag lb-tag-me">我</i>}
+                    </span>
+                    <span className="lb-metrics">
+                      {e.totalWords}个单词 · 连续学习{e.currentStreak}天 · 累计学习{e.totalDays}天
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
           <div className="stat-cards">
             <div className="stat-card">
               <div className="num">🔥{stats.streak}<small> 天</small></div>
@@ -137,36 +167,6 @@ export function StatsPage() {
                 <Skeleton h={220} r={10} />
               )}
             </div>
-          </div>
-
-          <div className="card">
-            <div className="card-title">学习排行榜</div>
-            <div className="lb-sub">按累计学习词汇量排名 · 微信与体验用户同榜</div>
-            {!board ? (
-              <Skeleton h={180} r={10} />
-            ) : board.entries.length === 0 || board.entries.every((e) => e.totalWords === 0 && e.totalDays === 0) ? (
-              <EmptyState ico="🏆" title="还没有上榜数据，去学第一个单词抢占榜首吧" />
-            ) : (
-              <ol className="lb-list">
-                {board.entries.map((e) => (
-                  <li key={e.userId} className={`lb-row${e.isMe ? ' lb-me' : ''}`}>
-                    <span className={`lb-rank${e.rank <= 3 ? ` lb-rank-${e.rank}` : ''}`}>
-                      {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
-                    </span>
-                    <span className="lb-name">
-                      {e.nickname}
-                      <i className={`lb-tag${e.provider === 'wechat' ? ' lb-tag-wechat' : ''}`}>
-                        {e.provider === 'wechat' ? '微信' : '体验'}
-                      </i>
-                      {e.isMe && <i className="lb-tag lb-tag-me">我</i>}
-                    </span>
-                    <span className="lb-metrics">
-                      <b>{e.totalWords}</b> 词 · 连<b>{e.currentStreak}</b> 天 · 累<b>{e.totalDays}</b> 天
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
           </div>
         </>
       )}

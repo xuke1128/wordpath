@@ -1505,3 +1505,15 @@ input[type='range'] {
 .lb-metrics b {
   color: var(--text-main);
 }
+
+/* 排行榜窄屏：三指标过长时整行换到昵称下方，与名字左对齐 */
+@media (max-width: 480px) {
+  .lb-row {
+    flex-wrap: wrap;
+  }
+  .lb-metrics {
+    flex-basis: 100%;
+    padding-left: 40px;
+    margin-top: 2px;
+  }
+}
