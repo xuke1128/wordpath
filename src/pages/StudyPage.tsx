@@ -49,7 +49,15 @@ export function StudyPage() {
   const pendingAnswerRef = useRef<Record<string, unknown> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const toastRef = useRef(toast)
+  const advanceTimerRef = useRef<number | null>(null)
   toastRef.current = toast
+
+  // 组件卸载时清掉自动前进定时器，避免卸载后 setState
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
+    }
+  }, [])
 
   const loadQueue = useCallback(async (m: StudyMode) => {
     setLoadError(false)
@@ -101,6 +109,18 @@ export function StudyPage() {
     [navigate, refresh],
   )
 
+  /** 答完短暂停留（看清对错与正确答案）后自动进入下一题（v1.1：去掉解析弹窗）。 */
+  const scheduleAdvance = useCallback(
+    (resp: AnswerResultDTO, delay: number) => {
+      if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current)
+      advanceTimerRef.current = window.setTimeout(() => {
+        advanceTimerRef.current = null
+        applyResult(resp, true)
+      }, delay)
+    },
+    [applyResult],
+  )
+
   const submit = useCallback(
     async (payload: Record<string, unknown>) => {
       setSubmitting(true)
@@ -117,9 +137,31 @@ export function StudyPage() {
             'success',
           )
           window.setTimeout(() => applyResult(resp, true), 420)
+        } else if (payload.mode === 'choice') {
+          // 保留选项高亮片刻供确认对错，随后自动前进，不再弹解析卡
+          setResult(resp)
+          if (resp.correct) {
+            toastRef.current.show(
+              resp.nextIntervalDays <= 1 ? '答对了 · 明天再见' : `答对了 · ${resp.nextIntervalDays} 天后再见`,
+              'success',
+            )
+            scheduleAdvance(resp, 650)
+          } else {
+            toastRef.current.show('答错了 · 正确答案已标出', 'error')
+            scheduleAdvance(resp, 1100)
+          }
         } else {
           setResult(resp)
-          applyResult(resp, false) // 选择/拼写：展示解析，等「下一题」
+          if (resp.correct) {
+            toastRef.current.show(
+              resp.nextIntervalDays <= 1 ? '拼写正确 · 明天再见' : `拼写正确 · ${resp.nextIntervalDays} 天后再见`,
+              'success',
+            )
+            scheduleAdvance(resp, 650)
+          } else {
+            toastRef.current.show(`答错了 · 正确拼写：${resp.word.headword}`, 'error')
+            scheduleAdvance(resp, 1600)
+          }
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 400) {
@@ -133,11 +175,15 @@ export function StudyPage() {
         setSubmitting(false)
       }
     },
-    [applyResult, navigate],
+    [applyResult, navigate, scheduleAdvance],
   )
 
   const next = useCallback(() => {
     if (!result) return
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current)
+      advanceTimerRef.current = null
+    }
     if (sessionDateRef.current && result.progress.date !== sessionDateRef.current) {
       toastRef.current.show('已过零点，今日任务已刷新')
       navigate('/today', { replace: true })
@@ -346,32 +392,6 @@ export function StudyPage() {
                 )
               })}
             </div>
-            {result !== null && (
-              <>
-                {!result.correct && (
-                  <div className="spell-feedback bad" style={{ marginTop: 12 }}>
-                    正确答案是 {LETTERS[result.correctIndex ?? 0]}
-                  </div>
-                )}
-                <div className="explain-card">
-                  <div className="center-row" style={{ justifyContent: 'space-between' }}>
-                    <b style={{ fontSize: 18 }}>{result.word.headword}</b>
-                    <SpeakButton word={result.word.headword} />
-                  </div>
-                  <div className="phonetic" style={{ textAlign: 'left' }}>
-                    {result.word.phonetic}
-                  </div>
-                  <Meanings translations={result.word.translations} />
-                  <div className="example-en">{result.word.exampleEn}</div>
-                  <div className="example-cn">{result.word.exampleCn}</div>
-                </div>
-                <div className="next-btn-wrap">
-                  <button className="btn btn-primary btn-lg btn-block" onClick={next}>
-                    下一题 →
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         )}
 
@@ -420,43 +440,9 @@ export function StudyPage() {
                 </button>
               </div>
             ) : result.correct ? (
-              <>
-                <div className="spell-feedback ok">正确 ✅</div>
-                <div className="explain-card">
-                  <div className="center-row" style={{ justifyContent: 'space-between' }}>
-                    <b style={{ fontSize: 22 }}>{result.word.headword}</b>
-                    <SpeakButton word={result.word.headword} />
-                  </div>
-                  <div className="phonetic" style={{ textAlign: 'left' }}>
-                    {result.word.phonetic}
-                  </div>
-                </div>
-                <div className="next-btn-wrap">
-                  <button className="btn btn-primary btn-lg btn-block" onClick={next}>
-                    下一题 →
-                  </button>
-                </div>
-              </>
+              <div className="spell-feedback ok">正确 ✅</div>
             ) : (
-              <>
-                <div className="spell-feedback bad">⚠ 再看看正确拼写</div>
-                <div className="explain-card spell-compare">
-                  <div>
-                    你的答案：<span className="spell-word-wrong">{spellText.trim() || '（空）'}</span>
-                  </div>
-                  <div style={{ marginTop: 6 }}>
-                    正确拼写：<span className="spell-word-right">{result.word.headword}</span>
-                  </div>
-                  <div className="phonetic" style={{ textAlign: 'left' }}>
-                    {result.word.phonetic}
-                  </div>
-                </div>
-                <div className="next-btn-wrap">
-                  <button className="btn btn-primary btn-lg btn-block" onClick={next}>
-                    下一题 →
-                  </button>
-                </div>
-              </>
+              <div className="spell-feedback bad">正确拼写：{result.word.headword}</div>
             )}
           </div>
         )}

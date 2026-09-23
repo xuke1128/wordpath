@@ -1071,13 +1071,6 @@ input[type='range'] {
     animation: none;
   }
 }
-.explain-card {
-  margin-top: 14px;
-  background: #fff;
-  border-radius: var(--radius-btn);
-  padding: 14px 16px;
-  animation: item-in 240ms var(--ease-out);
-}
 .next-btn-wrap {
   margin-top: 16px;
 }
@@ -1116,19 +1109,6 @@ input[type='range'] {
 .spell-feedback.bad {
   background: var(--danger-soft);
   color: #b91c1c;
-}
-.spell-compare {
-  margin-top: 8px;
-  font-size: 15px;
-}
-.spell-word-right {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--primary-dark);
-}
-.spell-word-wrong {
-  color: var(--danger);
-  text-decoration: line-through;
 }
 .kbd-hint {
   display: none;
