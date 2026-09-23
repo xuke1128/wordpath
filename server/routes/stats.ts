@@ -2,9 +2,9 @@ import type { FastifyInstance } from 'fastify'
 import type { DB } from '../db/connection'
 import * as repo from '../db/repo'
 import { requireAuth } from '../auth/session'
-import { getStreak } from '../study-service'
+import { getLeaderboard, getStreak } from '../study-service'
 import { addDays, daysInMonth, isMonthStr, monthOf, todayInShanghai } from '../core/dates'
-import type { CalendarDTO, StatsDTO } from '../../shared/types'
+import type { CalendarDTO, LeaderboardDTO, StatsDTO } from '../../shared/types'
 
 export function registerStatsRoutes(app: FastifyInstance, db: DB): void {
   const auth = requireAuth(db)
@@ -54,6 +54,10 @@ export function registerStatsRoutes(app: FastifyInstance, db: DB): void {
       activeBook,
       last7,
     }
+  })
+
+  app.get('/api/stats/leaderboard', { preHandler: auth }, async (request): Promise<LeaderboardDTO> => {
+    return getLeaderboard(db, todayInShanghai(), request.user!.id)
   })
 
   app.get('/api/stats/calendar', { preHandler: auth }, async (request, reply): Promise<CalendarDTO | void> => {

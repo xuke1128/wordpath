@@ -5,13 +5,14 @@ import { Page } from '../components/AppHeader'
 import { ProgressBar } from '../components/ui'
 import { BarChart7, CalendarGrid } from '../components/charts'
 import { EmptyState, ErrorBlock, Skeleton } from '../components/ui'
-import type { CalendarDTO, StatsDTO } from '../../shared/types'
+import type { CalendarDTO, LeaderboardDTO, StatsDTO } from '../../shared/types'
 
-/** P6 统计页：指标卡 + 词书进度 + 近 7 天柱状图 + 当月打卡日历（US10 / US9）。 */
+/** P6 统计页：指标卡 + 词书进度 + 近 7 天柱状图 + 当月打卡日历 + 学习排行榜（US10 / US9 / US13）。 */
 export function StatsPage() {
   usePageTitle('统计')
   const [stats, setStats] = useState<StatsDTO | null>(null)
   const [cal, setCal] = useState<CalendarDTO | null>(null)
+  const [board, setBoard] = useState<LeaderboardDTO | null>(null)
   const [error, setError] = useState(false)
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -19,10 +20,15 @@ export function StatsPage() {
 
   const load = useCallback(() => {
     setError(false)
-    Promise.all([api.get<StatsDTO>('/api/stats'), api.get<CalendarDTO>(`/api/stats/calendar?month=${month}`)])
-      .then(([s, c]) => {
+    Promise.all([
+      api.get<StatsDTO>('/api/stats'),
+      api.get<CalendarDTO>(`/api/stats/calendar?month=${month}`),
+      api.get<LeaderboardDTO>('/api/stats/leaderboard'),
+    ])
+      .then(([s, c, b]) => {
         setStats(s)
         setCal(c)
+        setBoard(b)
       })
       .catch(() => setError(true))
   }, [month])
@@ -131,6 +137,36 @@ export function StatsPage() {
                 <Skeleton h={220} r={10} />
               )}
             </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title">学习排行榜</div>
+            <div className="lb-sub">按累计学习词汇量排名 · 微信与体验用户同榜</div>
+            {!board ? (
+              <Skeleton h={180} r={10} />
+            ) : board.entries.length === 0 || board.entries.every((e) => e.totalWords === 0 && e.totalDays === 0) ? (
+              <EmptyState ico="🏆" title="还没有上榜数据，去学第一个单词抢占榜首吧" />
+            ) : (
+              <ol className="lb-list">
+                {board.entries.map((e) => (
+                  <li key={e.userId} className={`lb-row${e.isMe ? ' lb-me' : ''}`}>
+                    <span className={`lb-rank${e.rank <= 3 ? ` lb-rank-${e.rank}` : ''}`}>
+                      {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
+                    </span>
+                    <span className="lb-name">
+                      {e.nickname}
+                      <i className={`lb-tag${e.provider === 'wechat' ? ' lb-tag-wechat' : ''}`}>
+                        {e.provider === 'wechat' ? '微信' : '体验'}
+                      </i>
+                      {e.isMe && <i className="lb-tag lb-tag-me">我</i>}
+                    </span>
+                    <span className="lb-metrics">
+                      <b>{e.totalWords}</b> 词 · 连<b>{e.currentStreak}</b> 天 · 累<b>{e.totalDays}</b> 天
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </>
       )}

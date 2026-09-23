@@ -159,6 +159,16 @@ export function listWordsByBook(db: DB, bookId: string): WordRow[] {
     .all(bookId) as unknown as WordRow[]
 }
 
+/** 今日（date）该词书内以「新词」身份学过的 wordId（用于当日新词计划的稳定回填）。 */
+export function listNewDoneWordIds(db: DB, userId: string, bookId: string, date: string): number[] {
+  const rows = db
+    .prepare(
+      'SELECT DISTINCT word_id FROM review_logs WHERE user_id = ? AND book_id = ? AND study_date = ? AND is_new = 1',
+    )
+    .all(userId, bookId, date) as unknown as Array<{ word_id: number }>
+  return rows.map((r) => r.word_id)
+}
+
 export function getWord(db: DB, wordId: number): WordRow | null {
   return (db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as WordRow | undefined) ?? null
 }
@@ -310,4 +320,34 @@ export function listCheckinDates(db: DB, userId: string): Set<string> {
     study_date: string
   }>
   return new Set(rows.map((r) => r.study_date))
+}
+
+// —— 排行榜（聚合，只读） ——
+
+export function listUsers(db: DB): UserRow[] {
+  return db.prepare('SELECT * FROM users ORDER BY created_at').all() as unknown as UserRow[]
+}
+
+/** 各用户累计打卡天数（累计学习天数口径 = 打卡日数，与 streak 同源）。 */
+export function checkinDaysByUser(db: DB): Map<string, number> {
+  const rows = db
+    .prepare('SELECT user_id, COUNT(*) AS n FROM checkins GROUP BY user_id')
+    .all() as unknown as Array<{ user_id: string; n: number }>
+  return new Map(rows.map((r) => [r.user_id, r.n]))
+}
+
+/** 各用户累计学习词汇量（有进度行的去重词数，与统计页「累计学习」同口径）。 */
+export function learnedCountByUser(db: DB): Map<string, number> {
+  const rows = db
+    .prepare('SELECT user_id, COUNT(DISTINCT word_id) AS n FROM word_progress GROUP BY user_id')
+    .all() as unknown as Array<{ user_id: string; n: number }>
+  return new Map(rows.map((r) => [r.user_id, r.n]))
+}
+
+/** 全部打卡明细（user_id + study_date），用于逐用户计算连续天数。 */
+export function allCheckinRows(db: DB): Array<{ user_id: string; study_date: string }> {
+  return db.prepare('SELECT user_id, study_date FROM checkins').all() as unknown as Array<{
+    user_id: string
+    study_date: string
+  }>
 }

@@ -1426,3 +1426,82 @@ input[type='range'] {
   text-align: center;
   padding: 24px;
 }
+
+/* ---------- 学习排行榜（US13） ---------- */
+.lb-sub {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: -4px 0 10px;
+}
+.lb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.lb-row:last-child {
+  border-bottom: none;
+}
+.lb-row.lb-me {
+  background: var(--primary-soft);
+  border-radius: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin: 0 -6px;
+}
+.lb-rank {
+  width: 30px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.lb-rank-1,
+.lb-rank-2,
+.lb-rank-3 {
+  font-size: 18px;
+}
+.lb-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.lb-tag {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: var(--bg-page);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+.lb-tag-wechat {
+  color: #059669;
+  background: var(--accent-blue-soft);
+}
+.lb-tag-me {
+  color: var(--primary-dark);
+  background: #fff;
+}
+.lb-metrics {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.lb-metrics b {
+  color: var(--text-main);
+}

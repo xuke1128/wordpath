@@ -65,3 +65,59 @@ describe('今日队列组队（PRD §3.3 / US4 / US8）', () => {
     expect(r.newWordIds).toEqual([])
   })
 })
+
+describe('今日队列组队：seed 洗牌模式（学习顺序打乱，v1.1）', () => {
+  const SEED = 'user-x:cet4:2026-09-23'
+
+  it('seed 模式：新词不再是词书（字母）顺序，但仍是合法子集', () => {
+    const r = buildTodayQueue(words, [], 5, '2026-09-23', 0, [], SEED)
+    expect(r.newWordIds).toHaveLength(5)
+    expect(r.newWordIds).not.toEqual([1, 2, 3, 4, 5]) // 不按词书顺序
+    for (const id of r.newWordIds) expect(words.some((w) => w.wordId === id)).toBe(true)
+  })
+
+  it('同 seed 结果稳定；不同 seed 顺序不同', () => {
+    const a = buildTodayQueue(words, [], 5, '2026-09-23', 0, [], 'seed-1')
+    const b = buildTodayQueue(words, [], 5, '2026-09-23', 0, [], 'seed-1')
+    const c = buildTodayQueue(words, [], 5, '2026-09-23', 0, [], 'seed-2')
+    expect(a.newWordIds).toEqual(b.newWordIds)
+    expect(a.newWordIds).not.toEqual(c.newWordIds)
+  })
+
+  it('当日稳定：学掉计划中 2 词后（回填 newDoneWordIds），剩余计划 = 原计划 − 已学，相对顺序不变', () => {
+    const morning = buildTodayQueue(words, [], 5, '2026-09-23', 0, [], SEED)
+    const learned = morning.newWordIds.slice(0, 2) // 先学计划前 2 个
+    const progress = learned.map((wordId) => ({ wordId, dueDate: '2026-09-24' }))
+    const afternoon = buildTodayQueue(words, progress, 5, '2026-09-23', 2, learned, SEED)
+    expect(afternoon.newWordIds).toEqual(morning.newWordIds.slice(2))
+  })
+
+  it('计划集合跨日不变式：今日配额内的已学词不把未学词挤出今日计划', () => {
+    const morning = buildTodayQueue(words, [], 4, '2026-09-23', 0, [], SEED)
+    const learned = morning.newWordIds // 全学完
+    const progress = learned.map((wordId) => ({ wordId, dueDate: '2026-09-24' }))
+    const evening = buildTodayQueue(words, progress, 4, '2026-09-23', 4, learned, SEED)
+    expect(evening.newWordIds).toEqual([]) // 配额用尽，不回吐新词
+    // 明日：已学词不再出现，后续词补上
+    const tomorrow = buildTodayQueue(
+      words,
+      progress,
+      4,
+      '2026-09-24',
+      0,
+      [],
+      'user-x:cet4:2026-09-24',
+    )
+    expect(tomorrow.newWordIds.some((id) => learned.includes(id))).toBe(false)
+    expect(tomorrow.newWordIds).toHaveLength(4)
+  })
+
+  it('复习词同日到期的平局按洗牌序打破（非 wordId 升序）', () => {
+    // 全部词今日到期；词书序 = wordId 升序，洗牌后同日平局不应保持 1..10
+    const progress = words.map((w) => ({ wordId: w.wordId, dueDate: '2026-09-23' }))
+    const r = buildTodayQueue(words, progress, 5, '2026-09-23', 0, [], SEED)
+    expect(r.reviewWordIds).toHaveLength(10)
+    expect(r.reviewWordIds).not.toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect([...r.reviewWordIds].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  })
+})

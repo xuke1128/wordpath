@@ -1,6 +1,6 @@
 {
   "name": "wordpath",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "词径 WordPath —— 按学段选词书、用间隔重复科学抗遗忘的背单词 Web 应用",
   "private": true,
   "engines": {

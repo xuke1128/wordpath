@@ -150,6 +150,25 @@ export interface CalendarDTO {
   days: Array<{ date: string; checked: boolean }>
 }
 
+/** 排行榜条目（US13）：累计学习天数 = 打卡日数；连续天数 = 当前 streak；累计词汇量 = 有进度去重词数。 */
+export interface LeaderboardEntryDTO {
+  rank: number
+  userId: string
+  nickname: string
+  provider: 'mock' | 'wechat'
+  totalDays: number
+  currentStreak: number
+  totalWords: number
+  isMe: boolean
+}
+
+export interface LeaderboardDTO {
+  today: string
+  /** Top 20；若我不在榜内则末尾追加我的真实名次行。 */
+  entries: LeaderboardEntryDTO[]
+  totalUsers: number
+}
+
 export interface AuthConfigDTO {
   mock: boolean
   wechat: boolean

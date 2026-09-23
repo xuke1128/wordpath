@@ -11,6 +11,8 @@ import { buildChoice, directionForPosition, formatMeaningText } from './core/cho
 import { calcStreak } from './core/streak'
 import type {
   AnswerResultDTO,
+  LeaderboardDTO,
+  LeaderboardEntryDTO,
   QueueDTO,
   QueueItemDTO,
   TodayDTO,
@@ -56,12 +58,16 @@ export function computeTodayQueue(db: DB, user: UserRow, today: string): TodayQu
   const words = repo.listWordsByBook(db, bookId)
   const progress = repo.listProgressByBook(db, user.id, bookId)
   const { newCount: newDoneToday } = repo.todayCounts(db, user.id, today, bookId)
+  const newDoneWordIds = repo.listNewDoneWordIds(db, user.id, bookId, today)
+  // 学习顺序打乱：以「用户 + 词书 + 日期」为种子确定性洗牌（同日稳定、跨用户/跨日不同）
   const { reviewWordIds, newWordIds } = buildTodayQueue(
     words.map((w) => ({ wordId: w.id, sort: w.sort })),
     progress.map((p) => ({ wordId: p.word_id, dueDate: p.due_date })),
     user.daily_new_limit,
     today,
     newDoneToday,
+    newDoneWordIds,
+    `${user.id}:${bookId}:${today}`,
   )
   const wordsById = new Map(words.map((w) => [w.id, w]))
   return { reviewIds: reviewWordIds, newIds: newWordIds, wordsById, bookId }
@@ -69,6 +75,53 @@ export function computeTodayQueue(db: DB, user: UserRow, today: string): TodayQu
 
 export function getStreak(db: DB, userId: string, today: string): number {
   return calcStreak(repo.listCheckinDates(db, userId), today)
+}
+
+/** GET /api/stats/leaderboard：全员排行榜（Top N + 我）。 */
+export function getLeaderboard(db: DB, today: string, meId: string, limit = 20): LeaderboardDTO {
+  const users = repo.listUsers(db)
+  const checkinDays = repo.checkinDaysByUser(db)
+  const learnedWords = repo.learnedCountByUser(db)
+  const datesByUser = new Map<string, Set<string>>()
+  for (const row of repo.allCheckinRows(db)) {
+    let set = datesByUser.get(row.user_id)
+    if (!set) datesByUser.set(row.user_id, (set = new Set()))
+    set.add(row.study_date)
+  }
+
+  const ranked = users.map((u) => ({
+    userId: u.id,
+    nickname: u.nickname,
+    provider: u.provider,
+    totalWords: learnedWords.get(u.id) ?? 0,
+    currentStreak: calcStreak(datesByUser.get(u.id) ?? new Set<string>(), today),
+    totalDays: checkinDays.get(u.id) ?? 0,
+    createdAt: u.created_at,
+  }))
+  // 排名口径：累计词汇量 → 连续天数 → 累计天数 → 注册先后（稳定平局）
+  ranked.sort(
+    (a, b) =>
+      b.totalWords - a.totalWords ||
+      b.currentStreak - a.currentStreak ||
+      b.totalDays - a.totalDays ||
+      a.createdAt.localeCompare(b.createdAt),
+  )
+
+  const toEntry = (u: (typeof ranked)[number], rank: number): LeaderboardEntryDTO => ({
+    rank,
+    userId: u.userId,
+    nickname: u.nickname,
+    provider: u.provider,
+    totalWords: u.totalWords,
+    currentStreak: u.currentStreak,
+    totalDays: u.totalDays,
+    isMe: u.userId === meId,
+  })
+  const top = ranked.slice(0, limit).map((u, i) => toEntry(u, i + 1))
+  const meIndex = ranked.findIndex((u) => u.userId === meId)
+  const entries =
+    meIndex >= 0 && meIndex < limit ? top : meIndex >= 0 ? [...top, toEntry(ranked[meIndex], meIndex + 1)] : top
+  return { today, entries, totalUsers: users.length }
 }
 
 /** GET /api/today 的数据装配。 */
