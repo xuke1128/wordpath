@@ -1,0 +1,37 @@
+# CI：install → lint → build → test
+# Node ≥ 22.5（node:sqlite 内置模块），矩阵覆盖 22 LTS 与 24 Current
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build（tsc 双项目类型检查 + 服务端编译 + 前端构建）
+        run: npm run build
+
+      - name: Test（vitest 单测 + fastify.inject 集成测试）
+        run: npm test
