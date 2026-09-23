@@ -1,0 +1,35 @@
+/* design tokens —— 与 docs/02-design.md §1.2 一一对应 */
+:root {
+  --primary: #16a34a;
+  --primary-dark: #15803d;
+  --primary-soft: #dcfce7;
+  --accent-blue: #0ea5e9;
+  --accent-blue-soft: #e0f2fe;
+  --accent-amber: #f59e0b;
+  --accent-amber-soft: #fef3c7;
+  --danger: #ef4444;
+  --danger-soft: #fee2e2;
+  --purple: #8b5cf6;
+  --purple-soft: #ede9fe;
+  --orange: #f97316;
+  --orange-soft: #ffedd5;
+  --cyan: #06b6d4;
+  --cyan-soft: #cffafe;
+  --text-main: #1f2937;
+  --text-sub: #6b7280;
+  --text-disabled: #d1d5db;
+  --line: #e5e7eb;
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+
+  --radius-card: 16px;
+  --radius-btn: 12px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.16);
+  --font-word: clamp(40px, 12vw, 56px);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 200ms;
+  --dur-flip: 300ms;
+}
