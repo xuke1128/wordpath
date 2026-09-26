@@ -1,0 +1,31 @@
+# Render 一键部署蓝图（https://render.com/docs/blueprint-spec）
+# 通过 README 顶部 Deploy to Render 按钮或 Render 控制台 New → Blueprint 使用。
+# 注意：free 实例文件系统为临时盘（重新部署/休眠重启后 SQLite 数据清空）。
+# 需要数据持久：升级 plan 为 starter 并解除下方 disk 注释（磁盘挂载点须与 WORDPATH_DB 所在目录一致）。
+services:
+  - type: web
+    name: wordpath
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: WORDPATH_DB
+        value: /opt/render/project/src/data/wordpath.db
+      # 启用微信登录时在控制台补齐三项凭据（不要写进本文件）：
+      # - key: WECHAT_APPID
+      #   sync: false
+      # - key: WECHAT_SECRET
+      #   sync: false
+      # - key: WECHAT_REDIRECT_URI
+      #   sync: false
+# 付费持久化示例（plan: starter + 磁盘）：
+#    plan: starter
+#    disk:
+#      name: wordpath-data
+#      mountPath: /var/data
+#      sizeGB: 1
+# 并将 WORDPATH_DB 设为 /var/data/wordpath.db

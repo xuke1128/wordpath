@@ -90,10 +90,18 @@ _占位：截图待补。_
 
 ## 部署
 
+**Render 一键部署（推荐）**：仓库内置 `render.yaml` 蓝图，点击即部署：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/xuke1128/wordpath)
+
+或控制台 New → Blueprint → 选择本仓库。健康检查 `GET /api/health`，首次启动自动播种 21,237 词。
+
+> ⚠️ **免费实例数据不持久**：Render free 档文件系统为临时盘，重新部署/休眠重启后学习记录清空（词书自动重播种）。给真实用户使用请升级：Dashboard 把 plan 改为 starter（约 $7/月）并挂 1GB 磁盘到 `/var/data`、环境变量 `WORDPATH_DB=/var/data/wordpath.db`（`render.yaml` 内有现成注释示例）；或用 Fly.io/Railway 的卷挂载方案（约 $1-5/月）。
+
 单进程方案（任选）：
 
 - **云主机 + Docker**：`docker build -t wordpath .`，容器内 `npm start`，把 `data/` 目录挂载为 volume 持久化 SQLite，前置 Nginx/Caddy 终止 HTTPS。
-- **Render / Railway / Fly.io 免费档**：Build `npm ci && npm run build`，Start `npm start`，持久盘挂到 `data/`，健康检查 `GET /api/health`。
+- **Fly.io / Railway**：Build `npm ci && npm run build`，Start `npm start`，持久盘挂载点通过 `WORDPATH_DB` 指向，健康检查 `GET /api/health`。
 
 ## 技术栈
 
