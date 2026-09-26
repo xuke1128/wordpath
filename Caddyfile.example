@@ -1,0 +1,4 @@
+# 把 <你的域名> 换成实际域名（Caddy 自动申请/续期 Let's Encrypt 证书）
+<你的域名> {
+	reverse_proxy app:8787
+}

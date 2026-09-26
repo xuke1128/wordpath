@@ -1,0 +1,39 @@
+# 词径 WordPath 单机部署（阿里云/火山引擎/任意 VPS）：应用 + Caddy 自动 HTTPS
+# 用法：
+#   1) 域名解析 A 记录指向本机，放行 80/443 端口
+#   2) cp Caddyfile.example Caddyfile 并把域名改成你的
+#   3) docker compose up -d    （首次启动自动播种 21,237 词；数据持久在具名卷 wordpath-data）
+services:
+  app:
+    image: wordpath:latest
+    build: .
+    restart: unless-stopped
+    environment:
+      # 微信登录启用时补齐（回调 https://<你的域名>/api/auth/wechat/callback）：
+      # WECHAT_APPID: wx...
+      # WECHAT_SECRET: ...
+      # WECHAT_REDIRECT_URI: https://<你的域名>/api/auth/wechat/callback
+      FRONTEND_ORIGIN: https://${WORDPATH_DOMAIN:-localhost}
+    volumes:
+      - wordpath-data:/app/data
+    # 仅本机监听，公网流量统一走 Caddy
+    expose:
+      - "8787"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      WORDPATH_DOMAIN: ${WORDPATH_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  wordpath-data:
+  caddy-data:
+  caddy-config:

@@ -100,7 +100,8 @@ _占位：截图待补。_
 
 单进程方案（任选）：
 
-- **云主机 + Docker**：`docker build -t wordpath .`，容器内 `npm start`，把 `data/` 目录挂载为 volume 持久化 SQLite，前置 Nginx/Caddy 终止 HTTPS。
+- **云主机（阿里云/火山引擎轻量服务器，推荐面向国内用户）**：安装 Docker 后 `cp Caddyfile.example Caddyfile` 改域名、`WORDPATH_DOMAIN=你的域名 docker compose up -d --build`，Caddy 自动签发 HTTPS，数据持久在 `wordpath-data` 卷。大陆服务器需完成 ICP 备案后才能用域名对外提供 80/443 服务（备案也是开通微信网页授权的前提）。参考 ¥38-60/年（新用户轻量 2C2G）。
+- **云主机 + Docker（自管 HTTPS）**：`docker build -t wordpath .`，容器内 `npm start`，把 `data/` 目录挂载为 volume 持久化 SQLite，前置 Nginx/Caddy 终止 HTTPS。
 - **Fly.io / Railway**：Build `npm ci && npm run build`，Start `npm start`，持久盘挂载点通过 `WORDPATH_DB` 指向，健康检查 `GET /api/health`。
 
 ## 技术栈
