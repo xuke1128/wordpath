@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT NOT NULL,
   UNIQUE (provider, provider_id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_claimed_key ON users (claimed_key) WHERE claimed_key IS NOT NULL;
+-- 注意：claimed_key 的部分唯一索引在 connection.ts 的 migrate() 里创建
+-- （老库先 ALTER 补列后才能建索引，不能放在本 SCHEMA_SQL 首段执行）
 
 -- v1.3 头像独立表：避免大字段进入 users 常规查询
 CREATE TABLE IF NOT EXISTS user_avatars (

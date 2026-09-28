@@ -23,19 +23,13 @@ function loadBooks(): Array<{ file: string; book: WordBookFile }> {
 describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
   const books = loadBooks()
 
-  it('恰 6 本词书，id 唯一且覆盖全部 6 个学段', () => {
-    expect(books).toHaveLength(6)
+  it('7 本词书：6 学段全覆盖 + CET-4 核心派生书，词数与发布版一致', () => {
+    expect(books).toHaveLength(7)
     const ids = books.map((b) => b.book.id)
-    expect(new Set(ids).size).toBe(6)
-    expect([...ids].sort()).toEqual([...STAGES].sort())
-  })
-
-  it('6 本词书、id 唯一且覆盖全部 6 个学段，规模与发布版一致（v1.2 全量词库）', () => {
-    expect(books).toHaveLength(6)
-    const ids = books.map((b) => b.book.id)
-    expect(new Set(ids).size).toBe(6)
-    expect([...ids].sort()).toEqual([...STAGES].sort())
-    // 由 scripts/build-wordbooks.ts 从 kajweb/dict 数据生成；重新生成后如数量变化需同步更新
+    expect(new Set(ids).size).toBe(7)
+    for (const stage of STAGES) expect(ids, stage).toContain(stage)
+    expect(ids).toContain('cet4core')
+    // 由 scripts/build-wordbooks.ts 生成；重新生成后如数量变化需同步更新
     const expected: Record<string, number> = {
       primary: 676,
       junior: 2416,
@@ -43,6 +37,7 @@ describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
       cet4: 4500,
       cet6: 3907,
       kaoyan: 4988,
+      cet4core: 1933,
     }
     let total = 0
     for (const { book } of books) {
@@ -51,7 +46,7 @@ describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
       expect(book.description.trim().length, book.id).toBeGreaterThan(0)
       total += book.words.length
     }
-    expect(total).toBe(21237)
+    expect(total).toBe(23170)
   })
 
   it('每个词条字段完整：headword 书内唯一、音标/释义/双语例句非空', () => {

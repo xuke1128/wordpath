@@ -230,12 +230,40 @@ ${lines}
 `
 }
 
+/** 派生书：CET-4 核心词 = cet4 全量剔除高中考纲词（大学生背真新词；全量书保留供打基础）。 */
+function deriveCet4Core(outDir: string): void {
+  const refPath = path.resolve(process.cwd(), 'assets/reference/highschool-syllabus.txt')
+  const highSchool = new Set(
+    readFileSync(refPath, 'utf8')
+      .replace(/^\uFEFF/, '')
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s && !/^[A-Za-z]$/.test(s) && !/^[(（\d]/.test(s))
+      .map((s) => s.split(/[\s[]/)[0].toLowerCase().replace(/[^a-z'-]/g, ''))
+      .filter((w) => w.length > 0),
+  )
+  const full = JSON.parse(readFileSync(path.join(outDir, 'cet4.json'), 'utf8')) as WordBookFile
+  // 单字母词（a/I）不算「大学新词」，随基础词一并剔除
+  const words = full.words.filter((w) => w.headword.length >= 2 && !highSchool.has(w.headword.toLowerCase()))
+  if (words.length < 100) throw new Error(`cet4core: 仅 ${words.length} 词（<100），拒绝生成`)
+  const core: WordBookFile = {
+    id: 'cet4core',
+    stage: 'cet4',
+    name: 'CET-4 核心词',
+    description: '四级考纲新词（剔除高中基础词），适合已过高中词汇的大学生',
+  }
+  writeFileSync(path.join(outDir, 'cet4core.json'), serializeBook({ ...core, words }), 'utf8')
+  // eslint-disable-next-line no-console
+  console.log(`✔ cet4core：《${core.name}》${words.length} 词（CET-4 全量 ${full.words.length} 剔除高中考纲词派生）`)
+}
+
 function main(): void {
   const srcDir = process.argv[2]
   if (!srcDir) {
-    // eslint-disable-next-line no-console
-    console.error('用法：npm run wordbook:build -- <srcDir>（kajweb/dict 解压后的目录）')
-    process.exit(1)
+    // 无参数：跳过全量重建，仅从现有 cet4.json 派生核心书
+    const outDir = path.resolve(process.cwd(), 'assets/wordbooks')
+    deriveCet4Core(outDir)
+    return
   }
   const outDir = path.resolve(process.cwd(), 'assets/wordbooks')
   mkdirSync(outDir, { recursive: true })
@@ -255,6 +283,7 @@ function main(): void {
   }
   // eslint-disable-next-line no-console
   console.log(`共 ${total} 词 → ${outDir}`)
+  deriveCet4Core(outDir)
 }
 
 main()
