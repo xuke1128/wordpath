@@ -34,6 +34,10 @@ export interface UserDTO {
   id: string
   nickname: string
   provider: 'mock' | 'wechat'
+  /** 是否已上传头像（前端据此请求 /api/avatar/:id，否则回退表情头像）。 */
+  hasAvatar: boolean
+  /** 是否已认领（昵称+PIN）；认领后可跨设备找回进度。 */
+  claimed: boolean
 }
 
 export interface SettingsDTO {
@@ -160,6 +164,7 @@ export interface LeaderboardEntryDTO {
   currentStreak: number
   totalWords: number
   isMe: boolean
+  hasAvatar: boolean
 }
 
 export interface LeaderboardDTO {

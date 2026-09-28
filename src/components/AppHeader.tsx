@@ -55,7 +55,13 @@ export function AppHeader({ streak }: { streak?: number }) {
             </Link>
           )}
           <Link to="/settings" className="avatar-btn" aria-label="设置" title={me?.user.nickname ?? ''}>
-            {me?.user.provider === 'wechat' ? '🙂' : '🚀'}
+            {me?.user.hasAvatar ? (
+              <img className="avatar-img" src={`/api/avatar/${me.user.id}`} alt="" />
+            ) : me?.user.provider === 'wechat' ? (
+              '🙂'
+            ) : (
+              '🚀'
+            )}
           </Link>
         </div>
       </div>

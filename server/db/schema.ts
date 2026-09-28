@@ -9,11 +9,22 @@ CREATE TABLE IF NOT EXISTS users (
   provider_id TEXT NOT NULL,
   device_id TEXT,
   nickname TEXT NOT NULL,
+  claimed_key TEXT,                 -- v1.3 认领昵称的规范化唯一键（小写）；未认领为 NULL
+  pin_hash TEXT,                    -- v1.3 认领 PIN 的 scrypt 哈希（salt 内嵌）
   active_book_id TEXT,
   daily_new_limit INTEGER NOT NULL DEFAULT 20,
   last_mode TEXT NOT NULL DEFAULT 'card' CHECK (last_mode IN ('card','choice','spelling')),
   created_at TEXT NOT NULL,
   UNIQUE (provider, provider_id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_claimed_key ON users (claimed_key) WHERE claimed_key IS NOT NULL;
+
+-- v1.3 头像独立表：避免大字段进入 users 常规查询
+CREATE TABLE IF NOT EXISTS user_avatars (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  mime TEXT NOT NULL CHECK (mime IN ('image/jpeg','image/png','image/webp')),
+  data BLOB NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (

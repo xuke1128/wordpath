@@ -1,22 +1,44 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { useAuth } from '../state/AuthContext'
 import { usePageTitle } from '../App'
 import { ErrorBlock } from '../components/ui'
-import type { TodayDTO } from '../../shared/types'
+import { ShareSheet, type ShareCard } from '../components/ShareSheet'
+import type { StatsDTO, TodayDTO } from '../../shared/types'
 
-/** P4 完成结算页：自动打卡 + streak + 数据小结（F9）。 */
+/** P4 完成结算页：自动打卡 + streak + 数据小结 + 分享（F9 / v1.3）。 */
 export function CompletePage() {
   usePageTitle('今日任务完成')
+  const { me } = useAuth()
   const [data, setData] = useState<TodayDTO | null>(null)
+  const [stats, setStats] = useState<StatsDTO | null>(null)
   const [error, setError] = useState(false)
+  const [shareCard, setShareCard] = useState<ShareCard | null>(null)
 
   useEffect(() => {
-    api
-      .get<TodayDTO>('/api/today')
-      .then(setData)
+    Promise.all([api.get<TodayDTO>('/api/today'), api.get<StatsDTO>('/api/stats')])
+      .then(([t, s]) => {
+        setData(t)
+        setStats(s)
+      })
       .catch(() => setError(true))
   }, [])
+
+  const buildTodayShareCard = (): ShareCard | null => {
+    if (!data || !me) return null
+    return {
+      kind: 'today',
+      date: data.date,
+      nickname: me.user.nickname,
+      userId: me.user.id,
+      hasAvatar: me.user.hasAvatar,
+      newCount: data.task?.doneNewCount ?? 0,
+      reviewCount: data.task?.doneReviewCount ?? 0,
+      streak: data.streak,
+      totalWords: stats?.totalLearned ?? 0,
+    }
+  }
 
   const streak = data?.streak ?? 1
   const task = data?.task
@@ -47,10 +69,16 @@ export function CompletePage() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Link to="/stats" className="btn btn-primary btn-lg btn-block">
+              <button
+                className="btn btn-primary btn-lg btn-block"
+                onClick={() => setShareCard(buildTodayShareCard())}
+              >
+                📤 分享今日成果
+              </button>
+              <Link to="/stats" className="btn btn-secondary btn-block">
                 查看统计 →
               </Link>
-              <Link to="/today" className="btn btn-secondary btn-block">
+              <Link to="/today" className="btn btn-ghost btn-block">
                 返回今日
               </Link>
             </div>
@@ -62,6 +90,8 @@ export function CompletePage() {
           </div>
         )}
       </div>
+
+      <ShareSheet open={shareCard !== null} card={shareCard} onClose={() => setShareCard(null)} />
     </div>
   )
 }

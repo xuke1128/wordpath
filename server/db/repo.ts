@@ -15,6 +15,8 @@ export interface UserRow {
   provider_id: string
   device_id: string | null
   nickname: string
+  claimed_key: string | null
+  pin_hash: string | null
   active_book_id: string | null
   daily_new_limit: number
   last_mode: StudyMode
@@ -77,6 +79,61 @@ export function findUserByProvider(db: DB, provider: 'mock' | 'wechat', provider
       | UserRow
       | undefined) ?? null
   )
+}
+
+// —— 账号认领（v1.3） ——
+
+/** 按认领键（规范化昵称）找已认领用户；未认领或不存在均返回 null。 */
+export function findClaimedUser(db: DB, claimedKey: string): UserRow | null {
+  return (
+    (db.prepare('SELECT * FROM users WHERE claimed_key = ?').get(claimedKey) as UserRow | undefined) ?? null
+  )
+}
+
+/** 写入认领信息（昵称 + 规范化键 + PIN 哈希）。claimedKey 唯一性由调用方先查重。 */
+export function setClaim(db: DB, userId: string, nickname: string, claimedKey: string, pinHash: string): void {
+  db.prepare('UPDATE users SET nickname = ?, claimed_key = ?, pin_hash = ? WHERE id = ?').run(
+    nickname,
+    claimedKey,
+    pinHash,
+    userId,
+  )
+}
+
+/** 找回登录时把认领用户绑定到当前设备（此后设备 cookie 复用同一账号）。 */
+export function bindDevice(db: DB, userId: string, deviceId: string): void {
+  db.prepare('UPDATE users SET device_id = ? WHERE id = ?').run(deviceId, userId)
+}
+
+// —— 头像（v1.3） ——
+
+export interface AvatarRow {
+  mime: string
+  data: Uint8Array
+  updated_at: string
+}
+
+export function getAvatar(db: DB, userId: string): AvatarRow | null {
+  return (
+    (db.prepare('SELECT mime, data, updated_at FROM user_avatars WHERE user_id = ?').get(userId) as
+      | AvatarRow
+      | undefined) ?? null
+  )
+}
+
+export function hasAvatar(db: DB, userId: string): boolean {
+  return getAvatar(db, userId) !== null
+}
+
+export function setAvatar(db: DB, userId: string, mime: string, data: Uint8Array): void {
+  db.prepare(
+    `INSERT INTO user_avatars (user_id, mime, data, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET mime=excluded.mime, data=excluded.data, updated_at=excluded.updated_at`,
+  ).run(userId, mime, data, new Date().toISOString())
+}
+
+export function deleteAvatar(db: DB, userId: string): void {
+  db.prepare('DELETE FROM user_avatars WHERE user_id = ?').run(userId)
 }
 
 export function updateUser(db: DB, id: string, patch: Partial<Pick<UserRow, 'active_book_id' | 'daily_new_limit' | 'last_mode' | 'nickname'>>): void {

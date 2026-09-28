@@ -7,6 +7,7 @@ import * as path from 'node:path'
 import type { DB } from './db/connection'
 import type { AppConfig } from './env'
 import { registerAuthRoutes } from './routes/auth'
+import { registerAccountRoutes } from './routes/account'
 import { registerMeRoutes } from './routes/me'
 import { registerBooksRoutes } from './routes/books'
 import { registerTodayRoutes } from './routes/today'
@@ -27,6 +28,7 @@ export async function buildApp(db: DB, config: AppConfig): Promise<FastifyInstan
   app.get('/api/health', async () => ({ ok: true, time: new Date().toISOString() }))
 
   registerAuthRoutes(app, db, config)
+  registerAccountRoutes(app, db)
   registerMeRoutes(app, db)
   registerBooksRoutes(app, db)
   registerTodayRoutes(app, db)

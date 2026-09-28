@@ -116,6 +116,7 @@ export function getLeaderboard(db: DB, today: string, meId: string, limit = 20):
     currentStreak: u.currentStreak,
     totalDays: u.totalDays,
     isMe: u.userId === meId,
+    hasAvatar: repo.hasAvatar(db, u.userId),
   })
   const top = ranked.slice(0, limit).map((u, i) => toEntry(u, i + 1))
   const meIndex = ranked.findIndex((u) => u.userId === meId)

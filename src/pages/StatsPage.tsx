@@ -1,19 +1,35 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { useAuth } from '../state/AuthContext'
 import { usePageTitle } from '../App'
 import { Page } from '../components/AppHeader'
 import { ProgressBar } from '../components/ui'
 import { BarChart7, CalendarGrid } from '../components/charts'
 import { EmptyState, ErrorBlock, Skeleton } from '../components/ui'
+import { ShareSheet, type ShareCard } from '../components/ShareSheet'
 import type { CalendarDTO, LeaderboardDTO, StatsDTO } from '../../shared/types'
 
-/** P6 统计页：指标卡 + 词书进度 + 近 7 天柱状图 + 当月打卡日历 + 学习排行榜（US10 / US9 / US13）。 */
+/** 排行榜行的头像：有头像用图，否则昵称首字符的彩色圆。 */
+function RowAvatar({ userId, nickname, hasAvatar }: { userId: string; nickname: string; hasAvatar: boolean }) {
+  if (hasAvatar) return <img className="lb-avatar" src={`/api/avatar/${userId}`} alt="" />
+  const palette = ['#16a34a', '#0ea5e9', '#f59e0b', '#8b5cf6', '#f97316', '#06b6d4']
+  const hue = palette[(nickname.codePointAt(0) ?? 0) % palette.length]
+  return (
+    <span className="lb-avatar lb-avatar-fallback" style={{ background: hue }} aria-hidden="true">
+      {nickname.slice(0, 1).toUpperCase()}
+    </span>
+  )
+}
+
+/** P6 统计页：排行榜 + 指标卡 + 词书进度 + 近 7 天柱状图 + 当月打卡日历（US13 / US10 / US9）。 */
 export function StatsPage() {
   usePageTitle('统计')
+  const { me } = useAuth()
   const [stats, setStats] = useState<StatsDTO | null>(null)
   const [cal, setCal] = useState<CalendarDTO | null>(null)
   const [board, setBoard] = useState<LeaderboardDTO | null>(null)
   const [error, setError] = useState(false)
+  const [shareCard, setShareCard] = useState<ShareCard | null>(null)
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const [month, setMonth] = useState(`${now.getFullYear()}-${pad(now.getMonth() + 1)}`)
@@ -51,6 +67,11 @@ export function StatsPage() {
     stats.totalLearned === 0 &&
     stats.last7.every((d) => d.total === 0)
 
+  const buildBoardShareCard = (): ShareCard | null => {
+    if (!board || !stats || !me) return null
+    return { kind: 'board', date: board.today, nickname: me.user.nickname, entries: board.entries }
+  }
+
   return (
     <Page streak={stats?.streak}>
       <h1 className="page-title">统计</h1>
@@ -77,7 +98,12 @@ export function StatsPage() {
       {stats && (
         <>
           <div className="card">
-            <div className="card-title">学习排行榜</div>
+            <div className="card-title-row">
+              <div className="card-title">学习排行榜</div>
+              <button className="link-btn" onClick={() => setShareCard(buildBoardShareCard())}>
+                📤 分享
+              </button>
+            </div>
             <div className="lb-sub">按累计学习词汇量排名 · 微信与体验用户同榜</div>
             {!board ? (
               <Skeleton h={180} r={10} />
@@ -91,6 +117,7 @@ export function StatsPage() {
                       {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
                     </span>
                     <span className="lb-name">
+                      <RowAvatar userId={e.userId} nickname={e.nickname} hasAvatar={e.hasAvatar} />
                       {e.nickname}
                       <i className={`lb-tag${e.provider === 'wechat' ? ' lb-tag-wechat' : ''}`}>
                         {e.provider === 'wechat' ? '微信' : '体验'}
@@ -170,6 +197,8 @@ export function StatsPage() {
           </div>
         </>
       )}
+
+      <ShareSheet open={shareCard !== null} card={shareCard} onClose={() => setShareCard(null)} />
     </Page>
   )
 }

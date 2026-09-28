@@ -15,7 +15,13 @@ function toMeDTO(db: DB, userId: string): MeDTO | null {
     if (book) activeBook = { id: book.id, name: book.name }
   }
   return {
-    user: { id: user.id, nickname: user.nickname, provider: user.provider },
+    user: {
+      id: user.id,
+      nickname: user.nickname,
+      provider: user.provider,
+      hasAvatar: repo.hasAvatar(db, user.id),
+      claimed: user.claimed_key !== null,
+    },
     settings: { dailyNewLimit: user.daily_new_limit, lastMode: user.last_mode },
     activeBook,
   }

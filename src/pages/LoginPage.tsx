@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchAuthConfig, type AuthConfigResponse } from '../api/client'
+import { fetchAuthConfig, fetchMe, type AuthConfigResponse } from '../api/client'
 import { useAuth } from '../state/AuthContext'
 import { useToast } from '../state/ToastContext'
 import { usePageTitle, SKIP_ONBOARDING_KEY } from '../App'
 import { PathLogo } from '../components/AppHeader'
-import { ErrorBlock } from '../components/ui'
+import { ErrorBlock, Sheet } from '../components/ui'
 
-/** P0 登录页：体验登录（默认唯一入口）+ 条件性微信入口（两态渲染防闪现）。 */
+/** P0 登录页：体验登录（默认唯一入口）+ 昵称找回 + 条件性微信入口（两态渲染防闪现）。 */
 export function LoginPage() {
   usePageTitle('登录')
-  const { me, loading, mockLogin } = useAuth()
+  const { me, loading, mockLogin, refresh } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -20,6 +20,10 @@ export function LoginPage() {
   const [config, setConfig] = useState<AuthConfigResponse | null>(null)
   const [configError, setConfigError] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [reclaimOpen, setReclaimOpen] = useState(false)
+  const [reclaimName, setReclaimName] = useState('')
+  const [reclaimPin, setReclaimPin] = useState('')
+  const [reclaiming, setReclaiming] = useState(false)
 
   useEffect(() => {
     fetchAuthConfig()
@@ -35,20 +39,56 @@ export function LoginPage() {
     return <Navigate to={next || '/today'} replace />
   }
 
+  const afterEnter = (data: { activeBook: { id: string } | null }) => {
+    if (!data.activeBook) {
+      navigate('/onboarding', { replace: true })
+    } else {
+      navigate(next || '/today', { replace: true })
+    }
+  }
+
   const onMockLogin = async () => {
     setSubmitting(true)
     try {
       const data = await mockLogin()
       toast.show(data.user.provider === 'mock' ? '已进入体验模式' : '欢迎回来', 'success')
-      if (!data.activeBook) {
-        navigate('/onboarding', { replace: true })
-      } else {
-        navigate(next || '/today', { replace: true })
-      }
+      afterEnter(data)
     } catch {
       toast.show('服务暂时不可用，请稍后重试', 'error')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // 找回走原始 fetch：reclaim 的 401 是业务错误，不应触发全局「登录已过期」弹层
+  const onReclaim = async () => {
+    if (reclaiming) return
+    if (!reclaimName.trim() || reclaimPin.length < 4) {
+      toast.show('请输入昵称和 PIN（至少 4 位）', 'error')
+      return
+    }
+    setReclaiming(true)
+    try {
+      const res = await fetch('/api/account/reclaim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ nickname: reclaimName.trim(), pin: reclaimPin }),
+      })
+      if (res.ok) {
+        const data = await fetchMe()
+        await refresh()
+        toast.show(`欢迎回来，${data.user.nickname}`, 'success')
+        setReclaimOpen(false)
+        afterEnter(data)
+      } else {
+        const body = (await res.json().catch(() => null)) as { message?: string } | null
+        toast.show(body?.message ?? '昵称或 PIN 不对', 'error')
+      }
+    } catch {
+      toast.show('服务暂时不可用，请稍后重试', 'error')
+    } finally {
+      setReclaiming(false)
     }
   }
 
@@ -102,11 +142,46 @@ export function LoginPage() {
             </button>
           )}
 
+          <button className="link-btn" onClick={() => setReclaimOpen(true)}>
+            已认领账号？用昵称 + PIN 找回
+          </button>
+
           {configError && <ErrorBlock message="服务暂时不可用，请稍后重试" />}
         </div>
 
         <p className="login-trust">免费开源 · 进度自动保存</p>
       </div>
+
+      <Sheet open={reclaimOpen} title="找回账号" onClose={() => setReclaimOpen(false)}>
+        <div className="form-fields">
+          <label className="field-label" htmlFor="reclaim-nickname">
+            认领时的昵称
+          </label>
+          <input
+            id="reclaim-nickname"
+            className="form-input"
+            value={reclaimName}
+            maxLength={16}
+            placeholder="当时设置的昵称"
+            onChange={(e) => setReclaimName(e.target.value)}
+          />
+          <label className="field-label" htmlFor="reclaim-pin">
+            PIN
+          </label>
+          <input
+            id="reclaim-pin"
+            className="form-input"
+            value={reclaimPin}
+            type="password"
+            maxLength={12}
+            placeholder="当时设置的 PIN"
+            onChange={(e) => setReclaimPin(e.target.value)}
+          />
+          <button className="btn btn-primary btn-lg btn-block" disabled={reclaiming} onClick={() => void onReclaim()}>
+            {reclaiming ? '验证中…' : '找回并登录'}
+          </button>
+        </div>
+      </Sheet>
     </div>
   )
 }
