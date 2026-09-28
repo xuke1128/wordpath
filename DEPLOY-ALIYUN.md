@@ -86,3 +86,41 @@ WECHAT_APPID=wx...
 WECHAT_SECRET=...
 WECHAT_REDIRECT_URI=https://word.example.com/api/auth/wechat/callback
 ```
+
+## 附：实测部署记录（2026-09-28，Ubuntu 24.04 轻量服务器）
+
+实际部署未走 Docker（服务器访问 get.docker.com 被运营商重置），改用 **Node 直装 + systemd**，全部走国内镜像：
+
+```bash
+# 1. Node 22（阿里云镜像，需 ≥22.5）
+LATEST=$(curl -fsSL https://mirrors.aliyun.com/nodejs-release/ | grep -o "v22\.[0-9]*\.[0-9]*" | sort -V | tail -1)
+curl -fsSL "https://mirrors.aliyun.com/nodejs-release/$LATEST/node-${LATEST}-linux-x64.tar.xz" | tar -xJ -C /usr/local --strip-components=1
+
+# 2. 代码（GitHub 直连慢时从本地 rsync）
+rsync -az --exclude node_modules --exclude .git --exclude data --exclude dist ./ root@<IP>:/opt/wordpath/
+
+# 3. 依赖与构建（npmmirror）
+cd /opt/wordpath && npm ci --registry=https://registry.npmmirror.com && npm run build
+
+# 4. systemd 常驻（Unit 见下），注意 PORT 用防火墙已放行的端口（如 8080，备案后换 Caddy+80/443）
+```
+
+systemd Unit（`/etc/systemd/system/wordpath.service`）：
+
+```ini
+[Unit]
+Description=WordPath vocabulary web app
+After=network.target
+[Service]
+WorkingDirectory=/opt/wordpath
+ExecStart=/usr/local/bin/node dist/server/index.js
+Environment=NODE_ENV=production
+Environment=PORT=8080
+Environment=WORDPATH_DB=/opt/wordpath/data/wordpath.db
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+```
+
+`systemctl enable --now wordpath` 启动。更新版本 = rsync 源码 → `npm run build` → `systemctl restart wordpath`（务必在服务器上构建，勿直接同步本地 dist，避免产物不一致）。

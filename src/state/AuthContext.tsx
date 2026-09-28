@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { api, fetchMe, UNAUTHORIZED_EVENT } from '../api/client'
 import type { MeDTO } from '../../shared/types'
 
@@ -33,12 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeDTO | null>(null)
   const [loading, setLoading] = useState(true)
   const [expired, setExpired] = useState(false)
+  // 只有「曾经登录成功过」的 401 才弹过期弹层；首访无会话时静默交给路由守卫跳登录
+  const authedOnceRef = useRef(false)
 
   const refresh = useCallback(async (): Promise<MeDTO | null> => {
     try {
       const data = await fetchMe()
       setMe(data)
       setExpired(false)
+      if (data) authedOnceRef.current = true
       return data
     } catch {
       setMe(null)
@@ -52,11 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh()
     const onUnauthorized = () => {
       setMe(null)
+      if (!authedOnceRef.current) return
       // 已在登录页时不弹过期提示
       if (window.location.pathname !== '/login') setExpired(true)
     }
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
-    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    return () => {
+      window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    }
   }, [refresh])
 
   const mockLogin = useCallback(async (): Promise<MeDTO> => {

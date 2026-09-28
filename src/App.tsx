@@ -75,6 +75,7 @@ function Shell() {
     <>
       <SessionExpiredDialog />
       <Routes>
+        <Route path="/" element={<Navigate to="/today" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/onboarding"
