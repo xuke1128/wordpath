@@ -32,7 +32,7 @@ describe('账号认领（v1.3）', () => {
   it('认领后：/api/me 反映昵称/claimed；排行榜显示昵称与 hasAvatar', async () => {
     const { app } = await makeApp()
     const jar = await mockLogin(app, 'c-1')
-    await claimOn(app, jar, '背单词选手', 'abcd5678')
+    await claimOn(app, jar, '背单词选手', '5678')
 
     const me = await getJSON<MeDTO>(app, jar, '/api/me')
     expect(me.body.user.nickname).toBe('背单词选手')
@@ -55,6 +55,10 @@ describe('账号认领（v1.3）', () => {
     expect(dup.status).toBe(409)
     const badPin = await postJSON(app, jarA, '/api/account/claim', { nickname: '月亮改', pin: '12' })
     expect(badPin.status).toBe(400)
+    const longPin = await postJSON(app, jarA, '/api/account/claim', { nickname: '月亮改', pin: '12345' })
+    expect(longPin.status).toBe(400)
+    const alphaPin = await postJSON(app, jarA, '/api/account/claim', { nickname: '月亮改', pin: 'ab12' })
+    expect(alphaPin.status).toBe(400)
     const sys = await postJSON(app, jarA, '/api/account/claim', { nickname: '体验用户0099', pin: '1111' })
     expect(sys.status).toBe(400)
     const self = await postJSON(app, jarA, '/api/account/claim', { nickname: '月亮', pin: '1111' })
@@ -76,7 +80,7 @@ describe('账号找回（v1.3）', () => {
     const { app } = await makeApp()
     // 设备 A：登录并认领
     const jarA = await mockLogin(app, 'device-a')
-    await claimOn(app, jarA, '小舟', 'pass99')
+    await claimOn(app, jarA, '小舟', '9527')
     // 设备 B：同应用、不同设备 cookie → 是另一个账号
     const jarB = await mockLogin(app, 'device-b')
     const meB = await getJSON<MeDTO>(app, jarB, '/api/me')
@@ -87,7 +91,7 @@ describe('账号找回（v1.3）', () => {
       method: 'POST',
       url: '/api/account/reclaim',
       headers: { cookie: cookieHeader(jarB), 'content-type': 'application/json' },
-      payload: { nickname: '小舟', pin: 'pass99' },
+      payload: { nickname: '小舟', pin: '9527' },
     })
     expect(res.statusCode).toBe(200)
     expect((res.json() as { user: { nickname: string } }).user.nickname).toBe('小舟')
@@ -118,7 +122,7 @@ describe('账号找回（v1.3）', () => {
     await claimOn(app, jar, '限流同学', '8888')
     let last = 0
     for (let i = 0; i < 11; i++) {
-      const r = await postJSON(app, {}, '/api/account/reclaim', { nickname: '限流同学', pin: 'wrong' })
+      const r = await postJSON(app, {}, '/api/account/reclaim', { nickname: '限流同学', pin: '9999' })
       last = r.status
       if (r.status === 429) break
     }

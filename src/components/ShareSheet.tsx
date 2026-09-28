@@ -95,7 +95,7 @@ async function renderCard(card: ShareCard): Promise<string> {
   // 页眉
   ctx.fillStyle = PRIMARY
   ctx.font = '700 44px system-ui, -apple-system, "PingFang SC", sans-serif'
-  ctx.fillText('词径 WordPath', 56, 108)
+  ctx.fillText('WordPath', 56, 108)
   ctx.fillStyle = SUB
   ctx.font = '400 24px system-ui, -apple-system, "PingFang SC", sans-serif'
   ctx.fillText('从小学到考研，一条词径走到底', 56, 148)
@@ -168,8 +168,11 @@ async function renderCard(card: ShareCard): Promise<string> {
     }
   }
 
-  // 页脚：二维码 + 引导语
+  // 页脚：二维码（弱化尺寸）+ 引导语
   const qr = await loadQrDataUrl(origin)
+  ctx.fillStyle = SUB
+  ctx.font = '400 24px system-ui, -apple-system, "PingFang SC", sans-serif'
+  ctx.textAlign = 'center'
   if (qr) {
     const qimg = new Image()
     await new Promise<void>((resolve) => {
@@ -177,19 +180,12 @@ async function renderCard(card: ShareCard): Promise<string> {
       qimg.onerror = () => resolve()
       qimg.src = qr
     })
-    ctx.drawImage(qimg, W / 2 - 80, H - 268, 160, 160)
-    ctx.fillStyle = SUB
-    ctx.font = '400 26px system-ui, -apple-system, "PingFang SC", sans-serif'
-    ctx.textAlign = 'center'
+    ctx.drawImage(qimg, W / 2 - 52, H - 204, 104, 104)
     ctx.fillText('扫码和我一起背单词', W / 2, H - 76)
-    ctx.textAlign = 'left'
   } else {
-    ctx.fillStyle = SUB
-    ctx.font = '400 26px system-ui, -apple-system, "PingFang SC", sans-serif'
-    ctx.textAlign = 'center'
     ctx.fillText(origin, W / 2, H - 90)
-    ctx.textAlign = 'left'
   }
+  ctx.textAlign = 'left'
 
   return canvas.toDataURL('image/png')
 }
@@ -197,7 +193,7 @@ async function renderCard(card: ShareCard): Promise<string> {
 function shareText(card: ShareCard): string {
   const origin = window.location.origin
   if (card.kind === 'today') {
-    return `我在「词径」今天新学 ${card.newCount} 个单词、复习 ${card.reviewCount} 个，已连续打卡 ${card.streak} 天！一起来背单词吧 👉 ${origin}`
+    return `我在「WordPath」今天新学 ${card.newCount} 个单词、复习 ${card.reviewCount} 个，已连续打卡 ${card.streak} 天！一起来背单词吧 👉 ${origin}`
   }
   const top = card.entries
     .slice(0, 3)
@@ -205,7 +201,7 @@ function shareText(card: ShareCard): string {
     .join(' ')
   const me = card.entries.find((e) => e.isMe)
   const meLine = me ? `我排第 ${me.rank} 名！` : ''
-  return `「词径」学习排行榜：${top} ${meLine}一起来背单词吧 👉 ${origin}`
+  return `「WordPath」学习排行榜：${top} ${meLine}一起来背单词吧 👉 ${origin}`
 }
 
 /** 分享弹层：预览图 + 保存/复制/系统分享。微信内置浏览器提示长按保存。 */

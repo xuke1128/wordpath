@@ -53,8 +53,8 @@ function ClaimSheet({
 
   const submit = async () => {
     if (saving) return
-    if (!nickname.trim() || pin.length < 4) {
-      toast.show('昵称不能为空，PIN 至少 4 位', 'error')
+    if (!nickname.trim() || !/^\d{4}$/.test(pin)) {
+      toast.show('昵称不能为空，PIN 为 4 位数字', 'error')
       return
     }
     if (pin !== pin2) {
@@ -90,16 +90,17 @@ function ClaimSheet({
           onChange={(e) => setNickname(e.target.value)}
         />
         <label className="field-label" htmlFor="claim-pin">
-          PIN（4-12 位字母或数字，用于找回）
+          PIN（4 位数字，用于找回）
         </label>
         <input
           id="claim-pin"
           className="form-input"
           value={pin}
           type="password"
-          maxLength={12}
-          placeholder="4-12 位字母或数字"
-          onChange={(e) => setPin(e.target.value)}
+          inputMode="numeric"
+          maxLength={4}
+          placeholder="4 位数字"
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
         />
         <label className="field-label" htmlFor="claim-pin2">
           再输入一次 PIN
@@ -109,9 +110,10 @@ function ClaimSheet({
           className="form-input"
           value={pin2}
           type="password"
-          maxLength={12}
+          inputMode="numeric"
+          maxLength={4}
           placeholder="再输入一次"
-          onChange={(e) => setPin2(e.target.value)}
+          onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))}
         />
         {!claimed && <p className="hint-info">认领后：换设备 / 清理浏览器后，用昵称+PIN 找回进度并继续上榜</p>}
         <button className="btn btn-primary btn-lg btn-block" disabled={saving} onClick={() => void submit()}>

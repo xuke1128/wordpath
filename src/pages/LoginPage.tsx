@@ -63,8 +63,8 @@ export function LoginPage() {
   // 找回走原始 fetch：reclaim 的 401 是业务错误，不应触发全局「登录已过期」弹层
   const onReclaim = async () => {
     if (reclaiming) return
-    if (!reclaimName.trim() || reclaimPin.length < 4) {
-      toast.show('请输入昵称和 PIN（至少 4 位）', 'error')
+    if (!reclaimName.trim() || !/^\d{4}$/.test(reclaimPin)) {
+      toast.show('请输入昵称和 4 位数字 PIN', 'error')
       return
     }
     setReclaiming(true)
@@ -173,9 +173,10 @@ export function LoginPage() {
             className="form-input"
             value={reclaimPin}
             type="password"
-            maxLength={12}
-            placeholder="当时设置的 PIN"
-            onChange={(e) => setReclaimPin(e.target.value)}
+            inputMode="numeric"
+            maxLength={4}
+            placeholder="4 位数字"
+            onChange={(e) => setReclaimPin(e.target.value.replace(/\D/g, ''))}
           />
           <button className="btn btn-primary btn-lg btn-block" disabled={reclaiming} onClick={() => void onReclaim()}>
             {reclaiming ? '验证中…' : '找回并登录'}

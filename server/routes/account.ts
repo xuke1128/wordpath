@@ -12,7 +12,7 @@ import { requireAuth, SESSION_COOKIE, DEVICE_COOKIE, SESSION_TTL_DAYS, DEVICE_TT
 import { hashPin, verifyPin } from '../auth/pin'
 
 const MAX_AVATAR_BYTES = 200 * 1024
-const PIN_RE = /^[A-Za-z0-9]{4,12}$/
+const PIN_RE = /^\d{4}$/
 
 /** 控制字符（含 DEL）会破坏展示与存储，直接拒绝。 */
 function hasControlChars(s: string): boolean {
@@ -94,7 +94,7 @@ export function registerAccountRoutes(app: FastifyInstance, db: DB): void {
       return
     }
     if (!PIN_RE.test(pin)) {
-      reply.code(400).send({ error: 'BAD_PIN', message: 'PIN 需为 4-12 位字母或数字' })
+      reply.code(400).send({ error: 'BAD_PIN', message: 'PIN 需为 4 位数字' })
       return
     }
     const key = claimedKeyOf(nickname)
