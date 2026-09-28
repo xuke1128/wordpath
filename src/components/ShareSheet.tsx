@@ -180,7 +180,7 @@ async function renderCard(card: ShareCard): Promise<string> {
       qimg.onerror = () => resolve()
       qimg.src = qr
     })
-    ctx.drawImage(qimg, W / 2 - 52, H - 204, 104, 104)
+    ctx.drawImage(qimg, W / 2 - 38, H - 172, 76, 76)
     ctx.fillText('扫码和我一起背单词', W / 2, H - 76)
   } else {
     ctx.fillText(origin, W / 2, H - 90)
