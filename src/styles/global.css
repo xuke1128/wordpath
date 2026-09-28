@@ -1570,16 +1570,7 @@ input[type='range'] {
   margin-bottom: 12px;
 }
 .share-preview img {
-  max-width: 78%;
+  max-width: 100%;
   border-radius: 12px;
   border: 1px solid var(--line);
-}
-.share-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.share-actions .btn {
-  flex: 1;
-  white-space: nowrap;
 }
