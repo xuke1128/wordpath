@@ -143,7 +143,7 @@ export function LoginPage() {
           )}
 
           <button className="link-btn" onClick={() => setReclaimOpen(true)}>
-            已认领账号？用昵称 + PIN 找回
+            已有账号？用昵称 + PIN 找回
           </button>
 
           {configError && <ErrorBlock message="服务暂时不可用，请稍后重试" />}
@@ -155,7 +155,7 @@ export function LoginPage() {
       <Sheet open={reclaimOpen} title="找回账号" onClose={() => setReclaimOpen(false)}>
         <div className="form-fields">
           <label className="field-label" htmlFor="reclaim-nickname">
-            认领时的昵称
+            已有账号
           </label>
           <input
             id="reclaim-nickname"
