@@ -104,11 +104,11 @@ export function StatsPage() {
                 📤 分享
               </button>
             </div>
-            <div className="lb-sub">按累计学习词汇量排名 · 微信与体验用户同榜</div>
+            <div className="lb-sub">按累计学习词汇量排名 · 认领账号后即可上榜</div>
             {!board ? (
               <Skeleton h={180} r={10} />
             ) : board.entries.length === 0 || board.entries.every((e) => e.totalWords === 0 && e.totalDays === 0) ? (
-              <EmptyState ico="🏆" title="还没有上榜数据，去学第一个单词抢占榜首吧" />
+              <EmptyState ico="🏆" title="还没有上榜数据，认领账号并学习后即可上榜" />
             ) : (
               <ol className="lb-list">
                 {board.entries.map((e) => (

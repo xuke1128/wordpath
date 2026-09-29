@@ -77,9 +77,11 @@ export function getStreak(db: DB, userId: string, today: string): number {
   return calcStreak(repo.listCheckinDates(db, userId), today)
 }
 
-/** GET /api/stats/leaderboard：全员排行榜（Top N + 我）。 */
+/** GET /api/stats/leaderboard：排行榜（Top N + 我）。仅已认领账号与微信用户上榜，匿名体验账号不计。 */
 export function getLeaderboard(db: DB, today: string, meId: string, limit = 20): LeaderboardDTO {
-  const users = repo.listUsers(db)
+  const users = repo
+    .listUsers(db)
+    .filter((u) => u.claimed_key !== null || u.provider === 'wechat')
   const checkinDays = repo.checkinDaysByUser(db)
   const learnedWords = repo.learnedCountByUser(db)
   const datesByUser = new Map<string, Set<string>>()

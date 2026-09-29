@@ -312,7 +312,7 @@ async function renderCard(card: ShareCard): Promise<string> {
     ctx.fillText('学习排行榜', 78, 208)
     ctx.fillStyle = SUB
     ctx.font = font(400, 22)
-    ctx.fillText('按累计学习词汇量排名 · 微信与体验用户同榜', 56, 252)
+    ctx.fillText('按累计学习词汇量排名', 56, 252)
 
     let centerY = 330
     for (const e of card.entries.slice(0, 5)) {
@@ -407,7 +407,7 @@ export function ShareSheet({
 
   return (
     <Sheet open={open} title="分享到微信" onClose={onClose}>
-      <p className="share-hint">长按下方图片保存，再转发到微信群或好友</p>
+      <p className="share-hint">长按图片转发给微信好友</p>
       <div className="share-preview">
         {preview ? (
           <img src={preview} alt="分享卡片预览" />
