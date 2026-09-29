@@ -128,12 +128,12 @@ describe('认证（US1 / US2）', () => {
 })
 
 describe('词书与每日计划（US3 / US4）', () => {
-  it('列出 7 本内置词书（6 学段 + CET-4 核心派生书），词数与发布的词书 JSON 一致', async () => {
+  it('列出 9 本内置词书（6 学段全量 + 三本核心派生书），词数与发布的词书 JSON 一致', async () => {
     const { app } = await makeApp()
     const jar = await mockLogin(app)
     const { body } = await getJSON<{ books: Array<{ id: string; wordCount: number; isActive: boolean }> }>(app, jar, '/api/books')
     const expected = expectedWordCounts()
-    expect(body.books).toHaveLength(7)
+    expect(body.books).toHaveLength(9)
     for (const b of body.books) {
       expect(b.wordCount, b.id).toBe(expected[b.id])
       expect(b.wordCount).toBeGreaterThanOrEqual(100)

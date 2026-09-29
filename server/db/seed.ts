@@ -38,9 +38,14 @@ const BOOK_SORT: Record<string, number> = {
   junior: 2,
   senior: 3,
   cet4: 4,
-  cet6: 5,
-  kaoyan: 6,
+  cet4core: 5,
+  cet6: 6,
+  cet6core: 7,
+  kaoyan: 8,
+  kaoyancore: 9,
 }
+
+export { BOOK_SORT }
 
 /** 幂等播种：upsert 词书与词条（按 (book_id, headword) 去重）。 */
 export function seedWordBooks(db: DB, dir: string = wordbookAssetsDir()): { books: number; words: number } {

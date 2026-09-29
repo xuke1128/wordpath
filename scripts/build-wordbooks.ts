@@ -27,9 +27,9 @@ const SPECS: StageSpec[] = [
   { id: 'primary', stage: 'primary', name: '小学词书', description: '人教版小学英语（3-6 年级）核心词汇', patterns: [/PEPXiaoXue/i] },
   { id: 'junior', stage: 'junior', name: '初中词书', description: '中考核心词汇（人教/外研教材与中考词表合并）', patterns: [/ChuZhong/i] },
   { id: 'senior', stage: 'senior', name: '高中词书', description: '高考核心词汇（人教/北师大教材与高考词表合并）', patterns: [/GaoZhong/i] },
-  { id: 'cet4', stage: 'cet4', name: 'CET-4 核心词', description: '大学英语四级核心词汇', patterns: [/CET4/i] },
-  { id: 'cet6', stage: 'cet6', name: 'CET-6 核心词', description: '大学英语六级核心词汇', patterns: [/CET6/i] },
-  { id: 'kaoyan', stage: 'kaoyan', name: '考研词书', description: '考研英语高频核心词汇', patterns: [/KaoYan/i] },
+  { id: 'cet4', stage: 'cet4', name: 'CET-4 全量词', description: '四级考纲全集（含高中基础词，适合系统打底）', patterns: [/CET4/i] },
+  { id: 'cet6', stage: 'cet6', name: 'CET-6 全量词', description: '六级词书全集（含四级基础词，适合系统打底）', patterns: [/CET6/i] },
+  { id: 'kaoyan', stage: 'kaoyan', name: '考研全量词', description: '考研词书全集（含四六级基础词，适合系统打底）', patterns: [/KaoYan/i] },
 ]
 
 interface RawEntry {
@@ -230,11 +230,11 @@ ${lines}
 `
 }
 
-/** 派生书：CET-4 核心词 = cet4 全量剔除高中考纲词（大学生背真新词；全量书保留供打基础）。 */
-function deriveCet4Core(outDir: string): void {
-  const refPath = path.resolve(process.cwd(), 'assets/reference/highschool-syllabus.txt')
-  const highSchool = new Set(
-    readFileSync(refPath, 'utf8')
+/** 读取考纲参考表为小写词集合（assets/reference/*.txt，格式「单词 [音标] 释义」或纯单词行）。 */
+function loadSyllabusSet(name: string): Set<string> {
+  const file = path.resolve(process.cwd(), 'assets/reference', name)
+  return new Set(
+    readFileSync(file, 'utf8')
       .replace(/^\uFEFF/, '')
       .split(/\r?\n/)
       .map((s) => s.trim())
@@ -242,27 +242,78 @@ function deriveCet4Core(outDir: string): void {
       .map((s) => s.split(/[\s[]/)[0].toLowerCase().replace(/[^a-z'-]/g, ''))
       .filter((w) => w.length > 0),
   )
-  const full = JSON.parse(readFileSync(path.join(outDir, 'cet4.json'), 'utf8')) as WordBookFile
-  // 单字母词（a/I）不算「大学新词」，随基础词一并剔除
-  const words = full.words.filter((w) => w.headword.length >= 2 && !highSchool.has(w.headword.toLowerCase()))
-  if (words.length < 100) throw new Error(`cet4core: 仅 ${words.length} 词（<100），拒绝生成`)
-  const core: WordBookFile = {
+}
+
+interface CoreSpec {
+  id: string
+  sourceId: string
+  stage: Stage
+  name: string
+  description: string
+  /** 从源书剔除这些考纲表中的词（该阶段之前已学的词）。 */
+  subtract: string[]
+}
+
+const CORE_SPECS: CoreSpec[] = [
+  {
     id: 'cet4core',
+    sourceId: 'cet4',
     stage: 'cet4',
     name: 'CET-4 核心词',
     description: '四级考纲新词（剔除高中基础词），适合已过高中词汇的大学生',
+    subtract: ['highschool-syllabus.txt'],
+  },
+  {
+    id: 'cet6core',
+    sourceId: 'cet6',
+    stage: 'cet6',
+    name: 'CET-6 核心词',
+    description: '六级考纲新词（剔除四级考纲词），适合已过四级',
+    subtract: ['cet4-syllabus.txt'],
+  },
+  {
+    id: 'kaoyancore',
+    sourceId: 'kaoyan',
+    stage: 'kaoyan',
+    name: '考研核心词',
+    description: '考研词书新词（剔除高中考纲词），大学阶段需要新学的词',
+    subtract: ['highschool-syllabus.txt'],
+  },
+]
+
+/** 派生核心书：源书 − 低阶考纲词 − 专有名词（April/American 类，核心书不收）− 单字母词。 */
+function deriveCoreBook(outDir: string, spec: CoreSpec): void {
+  const subtract = new Set<string>()
+  for (const ref of spec.subtract) {
+    for (const w of loadSyllabusSet(ref)) subtract.add(w)
   }
-  writeFileSync(path.join(outDir, 'cet4core.json'), serializeBook({ ...core, words }), 'utf8')
+  const full = JSON.parse(readFileSync(path.join(outDir, `${spec.sourceId}.json`), 'utf8')) as WordBookFile
+  const words = full.words.filter(
+    (w) =>
+      w.headword.length >= 2 &&
+      !/^[A-Z]/.test(w.headword) &&
+      !subtract.has(w.headword.toLowerCase()),
+  )
+  if (words.length < 100) throw new Error(`${spec.id}: 仅 ${words.length} 词（<100），拒绝生成`)
+  const core: WordBookFile = {
+    id: spec.id,
+    stage: spec.stage,
+    name: spec.name,
+    description: spec.description,
+  }
+  writeFileSync(path.join(outDir, `${spec.id}.json`), serializeBook({ ...core, words }), 'utf8')
   // eslint-disable-next-line no-console
-  console.log(`✔ cet4core：《${core.name}》${words.length} 词（CET-4 全量 ${full.words.length} 剔除高中考纲词派生）`)
+  console.log(
+    `✔ ${spec.id}：《${spec.name}》${words.length} 词（${spec.sourceId} 全量 ${full.words.length} 剔除 ${spec.subtract.join('+')} 与专有名词派生）`,
+  )
 }
 
 function main(): void {
   const srcDir = process.argv[2]
   if (!srcDir) {
-    // 无参数：跳过全量重建，仅从现有 cet4.json 派生核心书
+    // 无参数：跳过全量重建，仅从现有全量书派生核心书
     const outDir = path.resolve(process.cwd(), 'assets/wordbooks')
-    deriveCet4Core(outDir)
+    for (const spec of CORE_SPECS) deriveCoreBook(outDir, spec)
     return
   }
   const outDir = path.resolve(process.cwd(), 'assets/wordbooks')
@@ -283,7 +334,7 @@ function main(): void {
   }
   // eslint-disable-next-line no-console
   console.log(`共 ${total} 词 → ${outDir}`)
-  deriveCet4Core(outDir)
+  for (const spec of CORE_SPECS) deriveCoreBook(outDir, spec)
 }
 
 main()

@@ -1,8 +1,7 @@
-{
-  "id": "cet4",
+{"id": "cet4",
   "stage": "cet4",
-  "name": "CET-4 核心词",
-  "description": "大学英语四级核心词汇",
+  "name": "CET-4 全量词",
+  "description": "四级考纲全集（含高中基础词，适合系统打底）",
   "words": [
     {"headword":"a","phonetic":"/ə/","translations":[{"pos":"art.","meaning":"一(个)；每一(个)"}],"example":{"en":"We have a problem.","cn":"我们遇到了一个麻烦。"}},
     {"headword":"abandon","phonetic":"/əˈbændən/","translations":[{"pos":"vt.","meaning":"离弃，丢弃；遗弃，抛弃；放弃"},{"pos":"n.","meaning":"放任； 纵情"}],"example":{"en":"How could she abandon her own child?","cn":"她怎么能抛弃自己的孩子呢？"}},

@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs'
 import { parseWordBookFile } from '../server/db/wordbook-file'
 import { openDatabase } from '../server/db/connection'
+import { BOOK_SORT } from '../server/db/seed'
 
 const [, , command, file] = process.argv
 
@@ -41,7 +42,7 @@ if (command === 'import') {
   const dbFile = process.env.WORDPATH_DB || './data/wordpath.db'
   const db = openDatabase(dbFile)
   const upBook = db.prepare(
-    `INSERT INTO wordbooks (id, stage, name, description, sort) VALUES (?, ?, ?, ?, 99)
+    `INSERT INTO wordbooks (id, stage, name, description, sort) VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET stage=excluded.stage, name=excluded.name, description=excluded.description`,
   )
   const upWord = db.prepare(
@@ -52,7 +53,7 @@ if (command === 'import') {
   )
   db.exec('BEGIN')
   try {
-    upBook.run(parsed.book.id, parsed.book.stage, parsed.book.name, parsed.book.description)
+    upBook.run(parsed.book.id, parsed.book.stage, parsed.book.name, parsed.book.description, BOOK_SORT[parsed.book.id] ?? 99)
     parsed.book.words.forEach((w, i) => {
       upWord.run(
         parsed.book.id,

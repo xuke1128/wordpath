@@ -23,21 +23,25 @@ function loadBooks(): Array<{ file: string; book: WordBookFile }> {
 describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
   const books = loadBooks()
 
-  it('7 本词书：6 学段全覆盖 + CET-4 核心派生书，词数与发布版一致', () => {
-    expect(books).toHaveLength(7)
+  it('9 本词书：6 学段全量 + 三本核心派生书，词数与发布版一致', () => {
+    expect(books).toHaveLength(9)
     const ids = books.map((b) => b.book.id)
-    expect(new Set(ids).size).toBe(7)
+    expect(new Set(ids).size).toBe(9)
     for (const stage of STAGES) expect(ids, stage).toContain(stage)
     expect(ids).toContain('cet4core')
+    expect(ids).toContain('cet6core')
+    expect(ids).toContain('kaoyancore')
     // 由 scripts/build-wordbooks.ts 生成；重新生成后如数量变化需同步更新
     const expected: Record<string, number> = {
       primary: 676,
       junior: 2416,
       senior: 4750,
       cet4: 4500,
+      cet4core: 1892,
       cet6: 3907,
+      cet6core: 2316,
       kaoyan: 4988,
-      cet4core: 1933,
+      kaoyancore: 2551,
     }
     let total = 0
     for (const { book } of books) {
@@ -46,7 +50,21 @@ describe('QA：种子词书数据（PRD §3.2 / §9-1）', () => {
       expect(book.description.trim().length, book.id).toBeGreaterThan(0)
       total += book.words.length
     }
-    expect(total).toBe(23170)
+    expect(total).toBe(27996)
+  })
+
+  it('书名全局唯一（曾出现全量书与核心书重名）', () => {
+    const names = books.map((b) => b.book.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('核心书不含专有名词与单字母词', () => {
+    const cores = books.filter((b) => b.book.id.endsWith('core'))
+    expect(cores).toHaveLength(3)
+    for (const { book } of cores) {
+      expect(book.words.every((w) => w.headword.length >= 2), book.id).toBe(true)
+      expect(book.words.every((w) => !/^[A-Z]/.test(w.headword)), book.id).toBe(true)
+    }
   })
 
   it('每个词条字段完整：headword 书内唯一、音标/释义/双语例句非空', () => {
