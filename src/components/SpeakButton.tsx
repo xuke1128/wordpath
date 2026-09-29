@@ -1,25 +1,23 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useSpeech } from '../hooks/useSpeech'
 import { useToast } from '../state/ToastContext'
 
-/** 发音按钮（F11）：手动触发；不可用时禁用态 + 点击提示。 */
+/** 发音按钮（F11）：手动触发；在线真人发音，失败回退系统 TTS，再失败才提示。 */
 export function SpeakButton({ word, large }: { word: string; large?: boolean }) {
-  const { availability, speak } = useSpeech()
+  const { speak } = useSpeech()
   const toast = useToast()
   const [playing, setPlaying] = useState(false)
-  const disabled = availability === 'unavailable'
+  const failedRef = useRef(false)
 
   const onClick = () => {
-    if (disabled) {
-      toast.show('当前浏览器不支持语音朗读', 'error')
-      return
-    }
-    if (speak(word)) {
-      setPlaying(true)
-      window.setTimeout(() => setPlaying(false), 700)
-    } else {
-      toast.show('当前浏览器不支持语音朗读', 'error')
-    }
+    setPlaying(true)
+    window.setTimeout(() => setPlaying(false), 700)
+    void speak(word).then((ok) => {
+      if (!ok && !failedRef.current) {
+        failedRef.current = true
+        toast.show('发音播放失败，请检查网络后重试', 'error')
+      }
+    })
   }
 
   return (
@@ -27,10 +25,8 @@ export function SpeakButton({ word, large }: { word: string; large?: boolean }) 
       type="button"
       className={`speak-btn${large ? ' speak-btn-lg' : ''}${playing ? ' playing' : ''}`}
       onClick={onClick}
-      disabled={disabled}
-      aria-label={`朗读单词 ${word}${disabled ? '（不可用）' : ''}`}
-      aria-disabled={disabled}
-      title={disabled ? '当前浏览器不支持语音朗读' : '朗读单词'}
+      aria-label={`朗读单词 ${word}`}
+      title="朗读单词"
     >
       🔊
     </button>
